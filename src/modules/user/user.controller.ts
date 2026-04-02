@@ -1,4 +1,11 @@
-import { Controller, Get, HttpCode, HttpStatus, Param } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  ParseUUIDPipe,
+} from '@nestjs/common';
 import { UserService } from './user.service';
 
 @Controller('user')
@@ -12,7 +19,8 @@ export class UserController {
   }
 
   @Get(':id')
-  findById(@Param('id') id: string) {
+  @HttpCode(HttpStatus.OK)
+  findById(@Param('id', ParseUUIDPipe) id: string) {
     return this.userService.findById(id);
   }
 }
