@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { User } from '@/common/interfaces/user.interface';
 import { UserEntity } from '../entitties/user.entity';
 import { UserRole } from '@/common/enums/user-role';
+import { CreateUserDto } from '../dto/create-user.dto';
 
 @Injectable()
 export class DataUsersRepo {
@@ -24,5 +25,16 @@ export class DataUsersRepo {
 
   findById(id: string): User | undefined {
     return this.users.find((user) => user.id === id);
+  }
+
+  createUser(dto: CreateUserDto): User {
+    const newUser = new UserEntity({
+      login: dto.login,
+      password: dto.password,
+      role: dto.role || UserRole.VIEWER,
+    });
+
+    this.users.push(newUser);
+    return newUser;
   }
 }

@@ -11,10 +11,10 @@ export class UserEntity implements User {
   updatedAt: number;
 
   constructor(partial: Partial<UserEntity>) {
-    this.id = partial.id || randomUUID();
-    this.login = partial.login || '';
-    this.password = partial.password || '';
-    this.role = partial.role || UserRole.VIEWER;
+    this.id = partial.id ?? randomUUID();
+    this.login = partial.login ?? '';
+    this.password = partial.password ?? '';
+    this.role = partial.role ?? UserRole.VIEWER;
     const now = Date.now();
     this.createdAt = partial.createdAt || now;
     this.updatedAt = partial.updatedAt || now;
