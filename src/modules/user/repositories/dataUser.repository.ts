@@ -37,4 +37,17 @@ export class DataUsersRepo {
     this.users.push(newUser);
     return newUser;
   }
+
+  updatePassword(id: string, newPassword: string): User | undefined {
+    const user = this.findById(id);
+
+    if (!user) {
+      return undefined;
+    }
+
+    user.password = newPassword;
+    user.updatedAt = Date.now();
+
+    return user;
+  }
 }

@@ -1,7 +1,13 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { User } from '@/common/interfaces/user.interface';
 import { DataUsersRepo } from './repositories/dataUser.repository';
 import { CreateUserDto } from './dto/create-user.dto';
+import { UpdatePasswordDto } from './dto/update-password.dto';
 
 @Injectable()
 export class UserService {
@@ -19,7 +25,24 @@ export class UserService {
     return user;
   }
 
-  createUser(dto: CreateUserDto): User{
+  createUser(dto: CreateUserDto): User {
     return this.userRepository.createUser(dto);
+  }
+
+  updatePassword(id: string, dto: UpdatePasswordDto): User | undefined {
+    const user = this.findById(id);
+
+    if (user.password !== dto.oldPassword) {
+      throw new ForbiddenException('Old password incorrect');
+    }
+
+    if (user.password === dto.newPassword) {
+      throw new BadRequestException(
+        'New password must be different from old password',
+      );
+    }
+
+    const updateUser = this.userRepository.updatePassword(id, dto.newPassword);
+    return updateUser;
   }
 }

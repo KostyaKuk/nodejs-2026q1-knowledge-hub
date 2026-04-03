@@ -7,10 +7,12 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
+  Put,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { User } from '@/common/interfaces/user.interface';
+import { UpdatePasswordDto } from './dto/update-password.dto';
 
 @Controller('user')
 export class UserController {
@@ -30,7 +32,16 @@ export class UserController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  createUser(@Body() dto: CreateUserDto) : User {
-    return this.userService.createUser(dto)
+  createUser(@Body() dto: CreateUserDto): User {
+    return this.userService.createUser(dto);
+  }
+
+  @Put(':id')
+  @HttpCode(HttpStatus.OK)
+  updatePassword(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdatePasswordDto
+  ) : User {
+    return this.userService.updatePassword(id, dto)
   }
 }
