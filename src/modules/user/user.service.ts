@@ -45,4 +45,14 @@ export class UserService {
     const updateUser = this.userRepository.updatePassword(id, dto.newPassword);
     return updateUser;
   }
+
+  deleteUser(id: string): void {
+    this.findById(id);
+
+    const deleted = this.userRepository.delete(id);
+
+    if (!deleted) {
+      throw new NotFoundException(`User with "${id}" not found`);
+    }
+  }
 }

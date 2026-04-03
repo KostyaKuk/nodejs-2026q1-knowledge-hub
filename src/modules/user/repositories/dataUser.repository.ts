@@ -50,4 +50,16 @@ export class DataUsersRepo {
 
     return user;
   }
+
+  delete(id: string): boolean {
+    const user = this.findById(id);
+
+    if (!user) {
+      return false;
+    }
+
+    const userIndex = this.users.indexOf(user);
+    this.users.splice(userIndex, 1);
+    return true;
+  }
 }

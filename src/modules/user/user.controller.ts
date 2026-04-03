@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -40,8 +41,14 @@ export class UserController {
   @HttpCode(HttpStatus.OK)
   updatePassword(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() dto: UpdatePasswordDto
-  ) : User {
-    return this.userService.updatePassword(id, dto)
+    @Body() dto: UpdatePasswordDto,
+  ): User {
+    return this.userService.updatePassword(id, dto);
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  deleteUser(@Param('id', ParseUUIDPipe) id: string): void {
+    return this.userService.deleteUser(id);
   }
 }
