@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { User } from '@/common/interfaces/user.interface';
-import { UserEntity } from '../entitties/user.entity';
+import { UserEntity } from '../entities/user.entity';
 import { UserRole } from '@/common/enums/user-role';
 import { CreateUserDto } from '../dto/create-user.dto';
 
