@@ -9,6 +9,7 @@ import { UpdateArticleDto } from '../dto/update-article.dto';
 export class ArticleRepo {
   private articles: Article[] = [
     new ArticleEntity({
+      id: 'db0fdc9c-95a4-4a08-92d7-03ae7363471a',
       title: 'first title',
       content: 'hello this is my first article...',
       status: ArticleStatus.PUBLISHED,
@@ -17,6 +18,7 @@ export class ArticleRepo {
       tags: ['book', 'magazines', 'accessories'],
     }),
     new ArticleEntity({
+      id: '2473f6f9-bdbf-4b3d-8169-7ff2641eff9a',
       title: 'Second title',
       content: 'hello this is my second article...',
       status: ArticleStatus.DRAFT,

@@ -19,22 +19,27 @@ import { UpdatePasswordDto } from './dto/update-password.dto';
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
+  private excludePassword(user: User): Omit<User, 'password'> {
+    const { password: _password, ...result } = user;
+    return result;
+  }
+
   @Get()
   @HttpCode(HttpStatus.OK)
   findAll() {
-    return this.userService.findAll();
+    return this.userService.findAll().map((user) => this.excludePassword(user));
   }
 
   @Get(':id')
   @HttpCode(HttpStatus.OK)
   findById(@Param('id', ParseUUIDPipe) id: string) {
-    return this.userService.findById(id);
+    return this.excludePassword(this.userService.findById(id));
   }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  createUser(@Body() dto: CreateUserDto): User {
-    return this.userService.createUser(dto);
+  create(@Body() createUserDto: CreateUserDto) {
+    return this.excludePassword(this.userService.createUser(createUserDto));
   }
 
   @Put(':id')
@@ -42,8 +47,8 @@ export class UserController {
   updatePassword(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdatePasswordDto,
-  ): User {
-    return this.userService.updatePassword(id, dto);
+  ) {
+    return this.excludePassword(this.userService.updatePassword(id, dto));
   }
 
   @Delete(':id')

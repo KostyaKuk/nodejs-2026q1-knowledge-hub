@@ -8,11 +8,13 @@ import { CreateUserDto } from '../dto/create-user.dto';
 export class DataUsersRepo {
   private users: User[] = [
     new UserEntity({
+      id: '26c8c532-8d2a-4abd-848a-0dd7cbb83f31',
       login: 'hello@gmail.com',
       password: 'hello',
       role: UserRole.EDITOR,
     }),
     new UserEntity({
+      id: '4328b1b8-1bc6-4ec6-9f6b-1ce7eae9892d',
       login: 'hello2@gmail.com',
       password: 'hello2',
       role: UserRole.VIEWER,
