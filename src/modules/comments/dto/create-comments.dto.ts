@@ -1,4 +1,10 @@
-import { IsString, IsNotEmpty, IsUUID, MinLength } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsUUID,
+  MinLength,
+  IsOptional,
+} from 'class-validator';
 
 export class CreateCommentDto {
   @IsString({ message: 'Content must be a string' })
@@ -9,4 +15,7 @@ export class CreateCommentDto {
   @IsUUID(4, { message: 'articleId must be a valid UUID' })
   @IsNotEmpty({ message: 'articleId is required' })
   articleId: string;
+
+  @IsOptional()
+  authorId?: null;
 }
