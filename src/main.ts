@@ -13,6 +13,10 @@ async function bootstrap() {
     }),
   );
 
-  await app.listen(4000);
+  app.getHttpAdapter().get('/health', (req, res) => {
+    res.status(200).send('OK');
+  });
+
+  await app.listen(4000, '0.0.0.0');
 }
 bootstrap();

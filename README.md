@@ -1,5 +1,9 @@
 # Knowledge Hub
 
+### Finished Docker image
+
+[![Docker Hub](https://img.shields.io/badge/Docker%20Hub-knowledge--hub--api-blue?logo=docker)](https://hub.docker.com/repository/docker/kukushkin98/knowledge-hub-api/)
+
 ## Prerequisites
 
 - Git - [Download & Install Git](https://git-scm.com/downloads).
