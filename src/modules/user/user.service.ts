@@ -5,32 +5,38 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { User } from '@/common/interfaces/user.interface';
-import { DataUsersRepo } from './repositories/dataUser.repository';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdatePasswordDto } from './dto/update-password.dto';
+import { PrismaUserRepository } from './repositories/prisma-user.repository';
 
 @Injectable()
 export class UserService {
-  constructor(private userRepository: DataUsersRepo) {}
+  constructor(private userRepository: PrismaUserRepository) {}
 
-  findAll(): User[] {
+  async findAll(): Promise<User[]> {
     return this.userRepository.findAll();
   }
 
-  findById(id: string): User {
-    const user = this.userRepository.findById(id);
+  async findById(id: string): Promise<User> {
+    const user = await this.userRepository.findById(id);
     if (!user) {
       throw new NotFoundException(`User with "${id}" not found`);
     }
     return user;
   }
 
-  createUser(dto: CreateUserDto): User {
+  async createUser(dto: CreateUserDto): Promise<User> {
+    const existingUser = await this.userRepository.findByLogin(dto.login);
+    if (existingUser) {
+      throw new BadRequestException(
+        `User with login "${dto.login}" already exists`,
+      );
+    }
     return this.userRepository.createUser(dto);
   }
 
-  updatePassword(id: string, dto: UpdatePasswordDto): User | undefined {
-    const user = this.findById(id);
+  async updatePassword(id: string, dto: UpdatePasswordDto): Promise<User> {
+    const user = await this.findById(id);
 
     if (user.password !== dto.oldPassword) {
       throw new ForbiddenException('Old password incorrect');
@@ -42,15 +48,20 @@ export class UserService {
       );
     }
 
-    const updateUser = this.userRepository.updatePassword(id, dto.newPassword);
-    return updateUser;
+    const updatedUser = await this.userRepository.updatePassword(
+      id,
+      dto.newPassword,
+    );
+    if (!updatedUser) {
+      throw new NotFoundException(`User with "${id}" not found`);
+    }
+    return updatedUser;
   }
 
-  deleteUser(id: string): void {
-    this.findById(id);
+  async deleteUser(id: string): Promise<void> {
+    await this.findById(id);
 
-    const deleted = this.userRepository.delete(id);
-
+    const deleted = await this.userRepository.delete(id);
     if (!deleted) {
       throw new NotFoundException(`User with "${id}" not found`);
     }
