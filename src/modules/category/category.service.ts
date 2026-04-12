@@ -1,19 +1,19 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { dataCategoryRepo } from './repositories/dataCategory.repository';
+import { PrismaCategoryRepository } from './repositories/prisma-category.repository';
 import { Category } from '@/common/interfaces/category.interface';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 
 @Injectable()
 export class CategoryService {
-  constructor(private categoryRepo: dataCategoryRepo) {}
+  constructor(private categoryRepo: PrismaCategoryRepository) {}
 
-  findAll(): Category[] {
+  async findAll(): Promise<Category[]> {
     return this.categoryRepo.findAll();
   }
 
-  findOne(id: string): Category {
-    const category = this.categoryRepo.findById(id);
+  async findOne(id: string): Promise<Category> {
+    const category = await this.categoryRepo.findById(id);
 
     if (!category) {
       throw new NotFoundException(`Category with "${id}" not found`);
@@ -22,24 +22,30 @@ export class CategoryService {
     return category;
   }
 
-  create(createCategoryDto: CreateCategoryDto): Category {
+  async create(createCategoryDto: CreateCategoryDto): Promise<Category> {
     return this.categoryRepo.create(createCategoryDto);
   }
 
-  update(id: string, updateCategoryDto: UpdateCategoryDto): Category {
-    const updatedCategory = this.categoryRepo.update(id, updateCategoryDto);
+  async update(
+    id: string,
+    updateCategoryDto: UpdateCategoryDto,
+  ): Promise<Category> {
+    const updatedCategory = await this.categoryRepo.update(
+      id,
+      updateCategoryDto,
+    );
 
     if (!updatedCategory) {
-      throw new NotFoundException(`Cattegory with  "${id}" not found`);
+      throw new NotFoundException(`Category with "${id}" not found`);
     }
     return updatedCategory;
   }
 
-  delete(id: string): void {
-    const deleted = this.categoryRepo.delete(id);
+  async delete(id: string): Promise<void> {
+    const deleted = await this.categoryRepo.delete(id);
 
     if (!deleted) {
-      throw new NotFoundException(`Cattegory with  "${id}" not found`);
+      throw new NotFoundException(`Category with "${id}" not found`);
     }
   }
 }

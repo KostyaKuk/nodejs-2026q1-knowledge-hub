@@ -21,34 +21,36 @@ export class CategoryController {
 
   @Get()
   @HttpCode(HttpStatus.OK)
-  findAll(): Category[] {
+  async findAll(): Promise<Category[]> {
     return this.categoryService.findAll();
   }
 
   @Get(':id')
   @HttpCode(HttpStatus.OK)
-  findOne(@Param('id', ParseUUIDPipe) id: string): Category {
+  async findOne(@Param('id', ParseUUIDPipe) id: string): Promise<Category> {
     return this.categoryService.findOne(id);
   }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  create(@Body() createCategoryDto: CreateCategoryDto): Category {
+  async create(
+    @Body() createCategoryDto: CreateCategoryDto,
+  ): Promise<Category> {
     return this.categoryService.create(createCategoryDto);
   }
 
   @Put(':id')
   @HttpCode(HttpStatus.OK)
-  update(
+  async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateCategoryDto: UpdateCategoryDto,
-  ): Category {
+  ): Promise<Category> {
     return this.categoryService.update(id, updateCategoryDto);
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  delete(@Param('id', ParseUUIDPipe) id: string): void {
+  async delete(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
     return this.categoryService.delete(id);
   }
 }
