@@ -1,17 +1,21 @@
 import {
   Injectable,
   ConflictException,
-  BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SignupDto } from './dto/signup.dto';
+import { TokenService } from './token.service';
+import { LoginDto } from './dto/login.dto';
 
 @Injectable()
 export class AuthService {
-  constructor(private prismaService: PrismaService) {}
+  constructor(
+    private prismaService: PrismaService,
+    private tokenService: TokenService,
+  ) {}
 
-  // Количество раундов хеширования (10-12 оптимально)
   private readonly SALT_ROUNDS = 10;
 
   async signup(
@@ -19,7 +23,6 @@ export class AuthService {
   ): Promise<{ message: string; userId: string }> {
     const { login, password } = signupDto;
 
-    // 1. Проверяем, существует ли пользователь с таким login
     const existingUser = await this.prismaService.prisma.user.findUnique({
       where: { login },
     });
@@ -28,22 +31,52 @@ export class AuthService {
       throw new ConflictException(`User with login "${login}" already exists`);
     }
 
-    // 2. Хешируем пароль
     const hashedPassword = await bcrypt.hash(password, this.SALT_ROUNDS);
 
-    // 3. Создаём пользователя
     const newUser = await this.prismaService.prisma.user.create({
       data: {
         login,
         password: hashedPassword,
-        role: 'VIEWER', // По умолчанию обычный пользователь
+        role: 'VIEWER',
       },
     });
 
-    // 4. Возвращаем успешный ответ (без пароля)
     return {
       message: 'User successfully registered',
       userId: newUser.id,
+    };
+  }
+
+  async login(
+    loginDto: LoginDto,
+  ): Promise<{ accessToken: string; refreshToken: string }> {
+    const { login, password } = loginDto;
+
+    const user = await this.prismaService.prisma.user.findUnique({
+      where: { login },
+    });
+
+    if (!user) {
+      throw new ForbiddenException('Invalid login or password');
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      throw new ForbiddenException('Invalid login or password');
+    }
+
+    const payload = {
+      userId: user.id,
+      login: user.login,
+      role: user.role,
+    };
+
+    const accessToken = this.tokenService.generateAccessToken(payload);
+    const refreshToken = this.tokenService.generateRefreshToken(payload);
+
+    return {
+      accessToken,
+      refreshToken,
     };
   }
 }
