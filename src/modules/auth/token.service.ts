@@ -26,4 +26,24 @@ export class TokenService {
       expiresIn: '7d',
     });
   }
+
+  verifyRefreshToken(token: string): any {
+    try {
+      return this.jwtService.verify(token, {
+        secret: process.env.JWT_SECRET_REFRESH_KEY || 'refresh-secret',
+      });
+    } catch {
+      return null;
+    }
+  }
+
+  verifyAccessToken(token: string): any {
+    try {
+      return this.jwtService.verify(token, {
+        secret: process.env.JWT_SECRET_KEY || 'access-secret',
+      });
+    } catch {
+      return null;
+    }
+  }
 }

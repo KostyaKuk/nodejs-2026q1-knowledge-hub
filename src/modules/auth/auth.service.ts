@@ -2,12 +2,14 @@ import {
   Injectable,
   ConflictException,
   ForbiddenException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SignupDto } from './dto/signup.dto';
 import { TokenService } from './token.service';
 import { LoginDto } from './dto/login.dto';
+import { RefreshDto } from './dto/refresh.dto';
 
 @Injectable()
 export class AuthService {
@@ -77,6 +79,39 @@ export class AuthService {
     return {
       accessToken,
       refreshToken,
+    };
+  }
+
+  async refresh(
+    refreshDto: RefreshDto,
+  ): Promise<{ accessToken: string; refreshToken: string }> {
+    const { refreshToken } = refreshDto;
+
+    const payload = this.tokenService.verifyRefreshToken(refreshToken);
+    if (!payload) {
+      throw new UnauthorizedException('Invalid or expired refresh token');
+    }
+
+    const user = await this.prismaService.prisma.user.findUnique({
+      where: { id: payload.userId },
+    });
+
+    if (!user) {
+      throw new ForbiddenException('User no longer exists');
+    }
+
+    const newPayload = {
+      userId: user.id,
+      login: user.login,
+      role: user.role,
+    };
+
+    const newAccessToken = this.tokenService.generateAccessToken(newPayload);
+    const newRefreshToken = this.tokenService.generateRefreshToken(newPayload);
+
+    return {
+      accessToken: newAccessToken,
+      refreshToken: newRefreshToken,
     };
   }
 }

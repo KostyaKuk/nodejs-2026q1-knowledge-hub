@@ -14,6 +14,7 @@ import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { User } from '@/common/interfaces/user.interface';
 import { UpdatePasswordDto } from './dto/update-password.dto';
+import { Roles } from '../auth/decorators/roles.decorator';
 
 @Controller('user')
 export class UserController {
@@ -24,6 +25,7 @@ export class UserController {
     return result;
   }
 
+  @Roles('ADMIN', 'EDITOR', 'VIEWER')
   @Get()
   @HttpCode(HttpStatus.OK)
   async findAll() {
@@ -31,6 +33,7 @@ export class UserController {
     return users.map((user) => this.excludePassword(user));
   }
 
+  @Roles('ADMIN', 'EDITOR', 'VIEWER')
   @Get(':id')
   @HttpCode(HttpStatus.OK)
   async findById(@Param('id', ParseUUIDPipe) id: string) {
@@ -38,6 +41,7 @@ export class UserController {
     return this.excludePassword(user);
   }
 
+  @Roles('ADMIN', 'EDITOR')
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async create(@Body() createUserDto: CreateUserDto) {
@@ -45,6 +49,7 @@ export class UserController {
     return this.excludePassword(user);
   }
 
+  @Roles('ADMIN', 'EDITOR')
   @Put(':id')
   @HttpCode(HttpStatus.OK)
   async updatePassword(
@@ -55,6 +60,7 @@ export class UserController {
     return this.excludePassword(user);
   }
 
+  @Roles('ADMIN')
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteUser(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
