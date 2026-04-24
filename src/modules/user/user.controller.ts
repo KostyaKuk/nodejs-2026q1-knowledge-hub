@@ -26,34 +26,38 @@ export class UserController {
 
   @Get()
   @HttpCode(HttpStatus.OK)
-  findAll() {
-    return this.userService.findAll().map((user) => this.excludePassword(user));
+  async findAll() {
+    const users = await this.userService.findAll();
+    return users.map((user) => this.excludePassword(user));
   }
 
   @Get(':id')
   @HttpCode(HttpStatus.OK)
-  findById(@Param('id', ParseUUIDPipe) id: string) {
-    return this.excludePassword(this.userService.findById(id));
+  async findById(@Param('id', ParseUUIDPipe) id: string) {
+    const user = await this.userService.findById(id);
+    return this.excludePassword(user);
   }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  create(@Body() createUserDto: CreateUserDto) {
-    return this.excludePassword(this.userService.createUser(createUserDto));
+  async create(@Body() createUserDto: CreateUserDto) {
+    const user = await this.userService.createUser(createUserDto);
+    return this.excludePassword(user);
   }
 
   @Put(':id')
   @HttpCode(HttpStatus.OK)
-  updatePassword(
+  async updatePassword(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdatePasswordDto,
   ) {
-    return this.excludePassword(this.userService.updatePassword(id, dto));
+    const user = await this.userService.updatePassword(id, dto);
+    return this.excludePassword(user);
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  deleteUser(@Param('id', ParseUUIDPipe) id: string): void {
+  async deleteUser(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
     return this.userService.deleteUser(id);
   }
 }

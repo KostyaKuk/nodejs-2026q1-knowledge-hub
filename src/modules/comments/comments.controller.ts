@@ -12,7 +12,6 @@ import {
 } from '@nestjs/common';
 import { CommentService } from './comments.service';
 import { GetCommentsDto } from './dto/get-comments.dto';
-import { CommentEntity } from './entities/comment.entity';
 import { CreateCommentDto } from './dto/create-comments.dto';
 import { IComment } from '@/common/interfaces/comment.interface';
 
@@ -22,25 +21,25 @@ export class CommetsController {
 
   @Get()
   @HttpCode(HttpStatus.OK)
-  findByArticleId(@Query() query: GetCommentsDto): CommentEntity[] {
+  async findByArticleId(@Query() query: GetCommentsDto): Promise<IComment[]> {
     return this.commetsService.findByArticleId(query);
   }
 
   @Get(':id')
   @HttpCode(HttpStatus.OK)
-  findById(@Param('id', ParseUUIDPipe) id: string): IComment {
+  async findById(@Param('id', ParseUUIDPipe) id: string): Promise<IComment> {
     return this.commetsService.findById(id);
   }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  create(@Body() createCommentDto: CreateCommentDto): IComment {
+  async create(@Body() createCommentDto: CreateCommentDto): Promise<IComment> {
     return this.commetsService.create(createCommentDto, null);
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  delete(@Param('id', ParseUUIDPipe) id: string): void {
+  async delete(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
     return this.commetsService.delete(id);
   }
 }

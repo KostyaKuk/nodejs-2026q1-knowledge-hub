@@ -23,34 +23,34 @@ export class ArticleController {
 
   @Get()
   @HttpCode(HttpStatus.OK)
-  findAll(@Query() query: QueryArticleDto): Article[] {
+  async findAll(@Query() query: QueryArticleDto): Promise<Article[]> {
     return this.articleService.findAll(query);
   }
 
   @Get(':id')
   @HttpCode(HttpStatus.OK)
-  findById(@Param('id', ParseUUIDPipe) id: string): Article {
+  async findById(@Param('id', ParseUUIDPipe) id: string): Promise<Article> {
     return this.articleService.findById(id);
   }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  createUser(@Body() dto: CreateArticleDto): Article {
+  async create(@Body() dto: CreateArticleDto): Promise<Article> {
     return this.articleService.createArticle(dto);
   }
 
   @Put(':id')
   @HttpCode(HttpStatus.OK)
-  update(
+  async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateArticleDto: UpdateArticleDto,
-  ): Article {
+  ): Promise<Article> {
     return this.articleService.update(id, updateArticleDto);
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  delete(@Param('id', ParseUUIDPipe) id: string): void {
+  async delete(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
     return this.articleService.delete(id);
   }
 }

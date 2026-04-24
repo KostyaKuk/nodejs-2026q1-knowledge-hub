@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { ArticleRepo } from './repositories/dataArticle.repository';
+import { PrismaArticleRepository } from './repositories/prisma-article.repository';
 import { QueryArticleDto } from './dto/query-article.dto';
 import { Article } from '@/common/interfaces/article.interface';
 import { CreateArticleDto } from './dto/create-article.dto';
@@ -7,46 +7,29 @@ import { UpdateArticleDto } from './dto/update-article.dto';
 
 @Injectable()
 export class ArticleService {
-  constructor(private articleRepo: ArticleRepo) {}
+  constructor(private articleRepo: PrismaArticleRepository) {}
 
-  findAll(query: QueryArticleDto): Article[] {
-    let articles = this.articleRepo.findAll();
-
-    if (query.status) {
-      articles = articles.filter((article) => article.status === query.status);
-    }
-
-    if (query.categoryId) {
-      articles = articles.filter(
-        (article) => article.categoryId === query.categoryId,
-      );
-    }
-
-    if (query.tag) {
-      articles = articles.filter((article) =>
-        article.tags.some(
-          (tag) => tag.toLowerCase() === query.tag!.toLowerCase(),
-        ),
-      );
-    }
-
-    return articles;
+  async findAll(query: QueryArticleDto): Promise<Article[]> {
+    return this.articleRepo.findAll(query);
   }
 
-  findById(id: string): Article {
-    const article = this.articleRepo.findById(id);
+  async findById(id: string): Promise<Article> {
+    const article = await this.articleRepo.findById(id);
     if (!article) {
       throw new NotFoundException(`Article with "${id}" not found`);
     }
     return article;
   }
 
-  createArticle(createArticleDto: CreateArticleDto): Article {
+  async createArticle(createArticleDto: CreateArticleDto): Promise<Article> {
     return this.articleRepo.createArticle(createArticleDto);
   }
 
-  update(id: string, updateArticleDto: UpdateArticleDto): Article {
-    const updatedArticle = this.articleRepo.update(id, updateArticleDto);
+  async update(
+    id: string,
+    updateArticleDto: UpdateArticleDto,
+  ): Promise<Article> {
+    const updatedArticle = await this.articleRepo.update(id, updateArticleDto);
 
     if (!updatedArticle) {
       throw new NotFoundException(`Article with "${id}" not found`);
@@ -55,8 +38,8 @@ export class ArticleService {
     return updatedArticle;
   }
 
-  delete(id: string): void {
-    const deleted = this.articleRepo.delete(id);
+  async delete(id: string): Promise<void> {
+    const deleted = await this.articleRepo.delete(id);
 
     if (!deleted) {
       throw new NotFoundException(`Article with "${id}" not found`);

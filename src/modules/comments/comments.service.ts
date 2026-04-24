@@ -4,33 +4,44 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { IComment } from '@/common/interfaces/comment.interface';
+import { PrismaCommentRepository } from './repositories/prisma-comment.repository';
+import { PrismaService } from '@/prisma/prisma.service';
 import { GetCommentsDto } from './dto/get-comments.dto';
-import { CommetsRepo } from './repositories/dataCommets.repository';
 import { CreateCommentDto } from './dto/create-comments.dto';
-import { ArticleRepo } from '../article/repositories/dataArticle.repository';
 
 @Injectable()
 export class CommentService {
   constructor(
-    private readonly commentRepository: CommetsRepo,
-    private readonly articleRepo: ArticleRepo,
+    private readonly commentRepository: PrismaCommentRepository,
+    private readonly prismaService: PrismaService,
   ) {}
 
-  findByArticleId(query: GetCommentsDto): IComment[] {
+  async findByArticleId(query: GetCommentsDto): Promise<IComment[]> {
     return this.commentRepository.findByArticleId(query.articleId);
   }
 
-  create(
+  async findById(id: string): Promise<IComment> {
+    const comment = await this.commentRepository.findById(id);
+    if (!comment) {
+      throw new NotFoundException(`Comment with ID "${id}" not found`);
+    }
+    return comment;
+  }
+
+  async create(
     createCommentDto: CreateCommentDto,
     authorId: string | null = null,
-  ): IComment {
-    const article = this.articleRepo.findById(createCommentDto.articleId);
+  ): Promise<IComment> {
+    const article = await this.prismaService.prisma.article.findUnique({
+      where: { id: createCommentDto.articleId },
+    });
 
     if (!article) {
       throw new UnprocessableEntityException(
         `Article with ID "${createCommentDto.articleId}" does not exist`,
       );
     }
+
     return this.commentRepository.create({
       content: createCommentDto.content,
       articleId: createCommentDto.articleId,
@@ -38,27 +49,23 @@ export class CommentService {
     });
   }
 
-  delete(id: string): void {
-    const comment = this.commentRepository.findById(id);
-
+  async delete(id: string): Promise<void> {
+    const comment = await this.commentRepository.findById(id);
     if (!comment) {
       throw new NotFoundException(`Comment with ID "${id}" not found`);
     }
 
-    const deleted = this.commentRepository.delete(id);
-
+    const deleted = await this.commentRepository.delete(id);
     if (!deleted) {
       throw new NotFoundException(`Comment with ID "${id}" not found`);
     }
   }
 
-  findById(id: string): IComment {
-    const comment = this.commentRepository.findById(id);
+  async deleteByArticleId(articleId: string): Promise<void> {
+    await this.commentRepository.deleteByArticleId(articleId);
+  }
 
-    if (!comment) {
-      throw new NotFoundException(`Comment with ID "${id}" not found`);
-    }
-
-    return comment;
+  async deleteByAuthorId(authorId: string): Promise<void> {
+    await this.commentRepository.deleteByAuthorId(authorId);
   }
 }
