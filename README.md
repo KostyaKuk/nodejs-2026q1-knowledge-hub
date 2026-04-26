@@ -23,6 +23,14 @@ npm install
 
 ## Running application
 
+docker-compose up -d 
+
+```
+npx prisma migrate deploy
+
+```
+npx prisma db seed
+
 ```
 npm start
 ```

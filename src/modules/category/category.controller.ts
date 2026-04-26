@@ -14,23 +14,27 @@ import { CategoryService } from './category.service';
 import { Category } from '@/common/interfaces/category.interface';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
+import { Roles } from '../auth/decorators/roles.decorator';
 
 @Controller('category')
 export class CategoryController {
   constructor(private readonly categoryService: CategoryService) {}
 
+  @Roles('ADMIN', 'EDITOR', 'VIEWER')
   @Get()
   @HttpCode(HttpStatus.OK)
   async findAll(): Promise<Category[]> {
     return this.categoryService.findAll();
   }
 
+  @Roles('ADMIN', 'EDITOR', 'VIEWER')
   @Get(':id')
   @HttpCode(HttpStatus.OK)
   async findOne(@Param('id', ParseUUIDPipe) id: string): Promise<Category> {
     return this.categoryService.findOne(id);
   }
 
+  @Roles('ADMIN')
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async create(
@@ -39,6 +43,7 @@ export class CategoryController {
     return this.categoryService.create(createCategoryDto);
   }
 
+  @Roles('ADMIN')
   @Put(':id')
   @HttpCode(HttpStatus.OK)
   async update(
@@ -48,6 +53,7 @@ export class CategoryController {
     return this.categoryService.update(id, updateCategoryDto);
   }
 
+  @Roles('ADMIN')
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async delete(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
