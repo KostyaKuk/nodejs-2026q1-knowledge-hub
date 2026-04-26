@@ -26,6 +26,8 @@ export default defineConfig({
         '**/*.dto.ts',
         '**/*.entity.ts',
         '**/*.interface.ts',
+        '**/repositories/**',
+        '**/token.service.ts',
       ],
     },
   },

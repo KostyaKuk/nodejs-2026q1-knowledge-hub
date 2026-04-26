@@ -18,9 +18,9 @@
     "start:prod": "node dist/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
 
-    "testVitest": "vitest",
+    "test:unit": "vitest",
     "testVitest:watch": "vitest --watch",
-    "testVitest:cov": "vitest --coverage",
+    "test:coverage": "vitest --coverage",
 
     "test": "jest --testMatch \"<rootDir>/*.spec.ts\" --noStackTrace --runInBand",
     "test:auth": "cross-env TEST_MODE=auth jest --testPathIgnorePatterns \"refresh|rbac\" --noStackTrace --runInBand",
