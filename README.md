@@ -23,13 +23,17 @@ npm install
 
 ## Running application
 
+```
 docker-compose up -d 
+```
 
 ```
 npx prisma migrate deploy
+```
 
 ```
 npx prisma db seed
+```
 
 ```
 npm start
@@ -43,7 +47,10 @@ For more information about OpenAPI/Swagger please visit https://swagger.io/.
 
 ### Unit tests for checking part 4 !
 
+```
 npm run test:unit
+```
+
 ```
 npm run test:coverage
 ```
