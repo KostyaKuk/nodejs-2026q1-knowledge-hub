@@ -41,6 +41,13 @@ For more information about OpenAPI/Swagger please visit https://swagger.io/.
 
 ## Testing
 
+### Unit tests for checking part 4 !
+
+npm run test:unit
+```
+npm run test:coverage
+```
+
 After application running open new terminal and enter:
 
 To run all tests without authorization
