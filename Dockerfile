@@ -5,8 +5,9 @@ RUN npm ci
 COPY prisma ./prisma/
 RUN npx prisma generate
 COPY . .
+RUN ls -la 
 RUN npm run build
-RUN npm ci --omit=dev && npm cache clean --force
+RUN ls -la dist/ 
 
 FROM node:24-alpine AS production
 

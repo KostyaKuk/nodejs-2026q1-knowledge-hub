@@ -2,14 +2,13 @@ import { Injectable } from '@nestjs/common';
 import { User } from '@/common/interfaces/user.interface';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { User as PrismaUser, $Enums } from '@prisma/client';
 import { UserRole } from '@/common/enums/user-role';
 
 @Injectable()
 export class PrismaUserRepository {
   constructor(private prismaService: PrismaService) {}
 
-  private toDomain(prismaUser: PrismaUser): User {
+  private toDomain(prismaUser): User {
     return {
       id: prismaUser.id,
       login: prismaUser.login,
@@ -40,13 +39,13 @@ export class PrismaUserRepository {
   }
 
   async createUser(dto: CreateUserDto): Promise<User> {
-    const role = dto.role as $Enums.UserRole;
+    const role = dto.role as UserRole;
 
     const newUser = await this.prismaService.prisma.user.create({
       data: {
         login: dto.login,
         password: dto.password,
-        role: role || $Enums.UserRole.VIEWER,
+        role: role || UserRole.VIEWER,
       },
     });
     return this.toDomain(newUser);
