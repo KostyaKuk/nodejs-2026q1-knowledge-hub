@@ -5,6 +5,7 @@ import {
   SummarizeArticleRequest,
   SummarizeArticleResponse,
 } from './dto/summarize-article.dto';
+import { TranslateArticleRequest, TranslateArticleResponse } from './dto/translate-article.dto';
 
 @Injectable()
 export class AiService {
@@ -38,4 +39,27 @@ export class AiService {
       summaryLength,
     };
   }
+
+  async translateArticle(
+  articleId: string,
+  request: TranslateArticleRequest,
+): Promise<TranslateArticleResponse> {
+  const article = await this.articleService.findById(articleId);
+
+  if (!article) {
+    throw new NotFoundException(`Article with ID "${articleId}" not found`);
+  }
+
+  const { translatedText, detectedLanguage } = await this.geminiService.translateText(
+    article.content,
+    request.targetLanguage,
+    request.sourceLanguage,
+  );
+
+  return {
+    articleId: article.id,
+    translatedText,
+    detectedLanguage,
+  };
+}
 }

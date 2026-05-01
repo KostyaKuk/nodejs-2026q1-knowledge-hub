@@ -91,4 +91,66 @@ Summary:`;
       throw new Error('Failed to generate summary');
     }
   }
+
+  async translateText(
+  text: string,
+  targetLanguage: string,
+  sourceLanguage?: string,
+): Promise<{ translatedText: string; detectedLanguage: string }> {
+  const sourceInstruction = sourceLanguage
+    ? `The source language is ${sourceLanguage}.`
+    : `Detect the source language automatically.`;
+
+  const prompt = `You are a professional translator. Translate the following text to ${targetLanguage}.
+
+${sourceInstruction}
+
+Text to translate:
+${text.substring(0, 5000)}
+
+STRICT REQUIREMENTS:
+- Output ONLY the translated text
+- Do NOT add any introductory phrases like "Here is the translation"
+- Do NOT add any meta-commentary
+- Do NOT include the original text
+- Keep the meaning, tone, and style of the original
+
+Translated text:`;
+
+  try {
+    const response = await this.axiosClient.post(
+      `/models/${this.model}:generateContent`,
+      {
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature: 0.3,
+          maxOutputTokens: 4000,
+          topP: 0.95,
+        },
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': this.apiKey,
+        },
+      },
+    );
+
+    let translatedText = response.data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+
+    if (!translatedText) {
+      throw new Error('No translation generated');
+    }
+
+    const detectedLanguage = sourceLanguage || 'auto-detected';
+
+    return {
+      translatedText,
+      detectedLanguage,
+    };
+  } catch (error) {
+    console.error('Gemini translation error:', error);
+    throw new Error('Failed to translate article');
+  }
+}
 }

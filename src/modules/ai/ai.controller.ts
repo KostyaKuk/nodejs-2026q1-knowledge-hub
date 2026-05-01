@@ -13,6 +13,7 @@ import {
   SummarizeArticleResponse,
 } from './dto/summarize-article.dto';
 import { Public } from '../auth/decorators/public.decorator';
+import { TranslateArticleRequest, TranslateArticleResponse } from './dto/translate-article.dto';
 
 @Controller('ai')
 export class AiController {
@@ -27,4 +28,14 @@ export class AiController {
   ): Promise<SummarizeArticleResponse> {
     return this.aiService.summarizeArticle(articleId, request);
   }
+
+  @Public()
+@Post('articles/:articleId/translate')
+@HttpCode(HttpStatus.OK)
+async translateArticle(
+  @Param('articleId', ParseUUIDPipe) articleId: string,
+  @Body() request: TranslateArticleRequest,
+): Promise<TranslateArticleResponse> {
+  return this.aiService.translateArticle(articleId, request);
+}
 }
