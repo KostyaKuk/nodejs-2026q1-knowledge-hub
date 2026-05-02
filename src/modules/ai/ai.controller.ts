@@ -14,6 +14,7 @@ import {
 } from './dto/summarize-article.dto';
 import { Public } from '../auth/decorators/public.decorator';
 import { TranslateArticleRequest, TranslateArticleResponse } from './dto/translate-article.dto';
+import { AnalyzeArticleRequest, AnalyzeArticleResponse } from './dto/analyze-article.dto';
 
 @Controller('ai')
 export class AiController {
@@ -37,5 +38,15 @@ async translateArticle(
   @Body() request: TranslateArticleRequest,
 ): Promise<TranslateArticleResponse> {
   return this.aiService.translateArticle(articleId, request);
+}
+
+@Public()
+@Post('articles/:articleId/analyze')
+@HttpCode(HttpStatus.OK)
+async analyzeArticle(
+  @Param('articleId', ParseUUIDPipe) articleId: string,
+  @Body() request: AnalyzeArticleRequest,
+): Promise<AnalyzeArticleResponse> {
+  return this.aiService.analyzeArticle(articleId, request);
 }
 }

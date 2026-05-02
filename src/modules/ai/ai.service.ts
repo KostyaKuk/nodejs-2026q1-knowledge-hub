@@ -6,6 +6,7 @@ import {
   SummarizeArticleResponse,
 } from './dto/summarize-article.dto';
 import { TranslateArticleRequest, TranslateArticleResponse } from './dto/translate-article.dto';
+import { AnalyzeArticleRequest, AnalyzeArticleResponse } from './dto/analyze-article.dto';
 
 @Injectable()
 export class AiService {
@@ -60,6 +61,30 @@ export class AiService {
     articleId: article.id,
     translatedText,
     detectedLanguage,
+  };
+}
+
+async analyzeArticle(
+  articleId: string,
+  request: AnalyzeArticleRequest,
+): Promise<AnalyzeArticleResponse> {
+  const article = await this.articleService.findById(articleId);
+
+  if (!article) {
+    throw new NotFoundException(`Article with ID "${articleId}" not found`);
+  }
+
+  const result = await this.geminiService.analyzeArticle(
+    article.title,
+    article.content,
+    request.task,
+  );
+
+  return {
+    articleId: article.id,
+    analysis: result.analysis,
+    suggestions: result.suggestions,
+    severity: result.severity,
   };
 }
 }

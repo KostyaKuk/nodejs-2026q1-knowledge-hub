@@ -153,4 +153,78 @@ Translated text:`;
     throw new Error('Failed to translate article');
   }
 }
+
+async analyzeArticle(
+  title: string,
+  content: string,
+  task: 'review' | 'bugs' | 'optimize' | 'explain' = 'review',
+): Promise<{ analysis: string; suggestions: string[]; severity: 'info' | 'warning' | 'error' }> {
+  if (content.length < 200) {
+    return {
+      analysis: `Article "${title}" is too short for meaningful analysis. Content length: ${content.length} characters.`,
+      suggestions: [
+        'Add more detailed content (minimum 500 characters recommended)',
+        'Include examples and practical applications'
+      ],
+      severity: 'warning',
+    };
+  }
+
+  const taskInstructions = {
+    review: 'Review quality and completeness',
+    bugs: 'Find technical errors',
+    optimize: 'Suggest SEO and readability improvements',
+    explain: 'Assess clarity for beginners',
+  };
+
+  const prompt = `Task: ${taskInstructions[task]}
+
+Title: ${title}
+Content: ${content}
+
+Return ONLY valid JSON in this exact format:
+{
+  "analysis": "your analysis here (one sentence, max 100 chars)",
+  "suggestions": ["suggestion 1", "suggestion 2"],
+  "severity": "info"
+}`;
+
+  try {
+    const response = await this.axiosClient.post(
+      `/models/${this.model}:generateContent`,
+      {
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature: 0.4,
+          maxOutputTokens: 300,
+        },
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': this.apiKey,
+        },
+      },
+    );
+
+    let text = response.data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+
+    text = text.replace(/```json\n?/g, '').replace(/```\n?/g, '');
+
+    const result = JSON.parse(text);
+
+    return {
+      analysis: result.analysis?.substring(0, 150) || `Analysis of "${title}" completed.`,
+      suggestions: result.suggestions?.slice(0, 2) || ['Add more examples', 'Improve structure'],
+      severity: result.severity === 'warning' ? 'warning' : result.severity === 'error' ? 'error' : 'info',
+    };
+  } catch (error) {
+    console.error('Parse error:', error);
+    return {
+      analysis: `Unable to analyze "${title}". Content may be too short or invalid.`,
+      suggestions: ['Ensure article has sufficient content (500+ characters)', 'Check for complete sentences'],
+      severity: 'warning',
+    };
+  }
+}
 }
