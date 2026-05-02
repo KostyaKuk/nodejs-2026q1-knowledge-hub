@@ -5,8 +5,14 @@ import {
   SummarizeArticleRequest,
   SummarizeArticleResponse,
 } from './dto/summarize-article.dto';
-import { TranslateArticleRequest, TranslateArticleResponse } from './dto/translate-article.dto';
-import { AnalyzeArticleRequest, AnalyzeArticleResponse } from './dto/analyze-article.dto';
+import {
+  TranslateArticleRequest,
+  TranslateArticleResponse,
+} from './dto/translate-article.dto';
+import {
+  AnalyzeArticleRequest,
+  AnalyzeArticleResponse,
+} from './dto/analyze-article.dto';
 
 @Injectable()
 export class AiService {
@@ -42,49 +48,50 @@ export class AiService {
   }
 
   async translateArticle(
-  articleId: string,
-  request: TranslateArticleRequest,
-): Promise<TranslateArticleResponse> {
-  const article = await this.articleService.findById(articleId);
+    articleId: string,
+    request: TranslateArticleRequest,
+  ): Promise<TranslateArticleResponse> {
+    const article = await this.articleService.findById(articleId);
 
-  if (!article) {
-    throw new NotFoundException(`Article with ID "${articleId}" not found`);
+    if (!article) {
+      throw new NotFoundException(`Article with ID "${articleId}" not found`);
+    }
+
+    const { translatedText, detectedLanguage } =
+      await this.geminiService.translateText(
+        article.content,
+        request.targetLanguage,
+        request.sourceLanguage,
+      );
+
+    return {
+      articleId: article.id,
+      translatedText,
+      detectedLanguage,
+    };
   }
 
-  const { translatedText, detectedLanguage } = await this.geminiService.translateText(
-    article.content,
-    request.targetLanguage,
-    request.sourceLanguage,
-  );
+  async analyzeArticle(
+    articleId: string,
+    request: AnalyzeArticleRequest,
+  ): Promise<AnalyzeArticleResponse> {
+    const article = await this.articleService.findById(articleId);
 
-  return {
-    articleId: article.id,
-    translatedText,
-    detectedLanguage,
-  };
-}
+    if (!article) {
+      throw new NotFoundException(`Article with ID "${articleId}" not found`);
+    }
 
-async analyzeArticle(
-  articleId: string,
-  request: AnalyzeArticleRequest,
-): Promise<AnalyzeArticleResponse> {
-  const article = await this.articleService.findById(articleId);
+    const result = await this.geminiService.analyzeArticle(
+      article.title,
+      article.content,
+      request.task,
+    );
 
-  if (!article) {
-    throw new NotFoundException(`Article with ID "${articleId}" not found`);
+    return {
+      articleId: article.id,
+      analysis: result.analysis,
+      suggestions: result.suggestions,
+      severity: result.severity,
+    };
   }
-
-  const result = await this.geminiService.analyzeArticle(
-    article.title,
-    article.content,
-    request.task,
-  );
-
-  return {
-    articleId: article.id,
-    analysis: result.analysis,
-    suggestions: result.suggestions,
-    severity: result.severity,
-  };
-}
 }
