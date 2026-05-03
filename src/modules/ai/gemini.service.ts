@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import axios, { AxiosInstance } from 'axios';
+import { PromptsService, SummaryLength, AnalysisTask, GenerationStyle } from './prompts/prompts.service';
 
 @Injectable()
 export class GeminiService {
@@ -8,7 +9,7 @@ export class GeminiService {
   private readonly model: string;
   private readonly baseUrl = 'https://generativelanguage.googleapis.com/v1';
 
-  constructor() {
+  constructor(private promptsService: PromptsService) {
     this.apiKey = process.env.GEMINI_API_KEY;
     this.model = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 
@@ -25,44 +26,10 @@ export class GeminiService {
   async generateSummary(
     title: string,
     content: string,
-    maxLength: 'short' | 'medium' | 'detailed' = 'medium',
-  ): Promise<string> {
-    const config = {
-      short: {
-        instruction:
-          'Respond with EXACTLY 1-2 sentences. Maximum 45 words. Be extremely concise.',
-        maxOutputTokens: 120,
-      },
-      medium: {
-        instruction:
-          'Respond with 1-2 paragraphs. Total length must be between 100 and 180 words.',
-        maxOutputTokens: 350,
-      },
-      detailed: {
-        instruction:
-          'Respond with 2-4 paragraphs. Total length must be between 200 and 380 words.',
-        maxOutputTokens: 700,
-      },
-    };
-
-    const selected = config[maxLength];
-
-    const prompt = `You are an expert summary writer.
-
-Create a ${maxLength} summary for the following article.
-
-Title: ${title}
-Content: ${content.substring(0, 6000)}
-
-STRICT REQUIREMENTS:
-- ${selected.instruction}
-- Focus only on the most important ideas and key points.
-- Use clear, professional and concise language.
-- Do NOT add any introductory or concluding phrases like "This article...", "In summary...", "Here is a summary...".
-- Do NOT use meta-commentary.
-- Output ONLY the summary text. Nothing else.
-
-Summary:`;
+    length: SummaryLength = 'medium',
+  ): Promise<{ summary: string; promptTokens?: number; completionTokens?: number }> {
+    const prompt = this.promptsService.getSummaryPrompt(title, content, length);
+    const config = this.promptsService.getSummaryConfig(length);
 
     try {
       const response = await this.axiosClient.post(
@@ -71,7 +38,7 @@ Summary:`;
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: {
             temperature: 0.5,
-            maxOutputTokens: selected.maxOutputTokens,
+            maxOutputTokens: config.maxOutputTokens,
             topP: 0.95,
           },
         },
@@ -83,13 +50,17 @@ Summary:`;
         },
       );
 
-      const summary =
-        response.data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+      const summary = response.data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
 
       if (!summary) {
         throw new Error('No summary generated');
       }
-      return summary;
+
+      const usage = response.data.usageMetadata;
+      const promptTokens = usage?.promptTokenCount;
+      const completionTokens = usage?.candidatesTokenCount;
+
+      return { summary, promptTokens, completionTokens };
     } catch (error) {
       console.error('Gemini API error:', error);
       throw new Error('Failed to generate summary');
@@ -100,26 +71,8 @@ Summary:`;
     text: string,
     targetLanguage: string,
     sourceLanguage?: string,
-  ): Promise<{ translatedText: string; detectedLanguage: string }> {
-    const sourceInstruction = sourceLanguage
-      ? `The source language is ${sourceLanguage}.`
-      : `Detect the source language automatically.`;
-
-    const prompt = `You are a professional translator. Translate the following text to ${targetLanguage}.
-
-${sourceInstruction}
-
-Text to translate:
-${text.substring(0, 5000)}
-
-STRICT REQUIREMENTS:
-- Output ONLY the translated text
-- Do NOT add any introductory phrases like "Here is the translation"
-- Do NOT add any meta-commentary
-- Do NOT include the original text
-- Keep the meaning, tone, and style of the original
-
-Translated text:`;
+  ): Promise<{ translatedText: string; detectedLanguage: string; promptTokens?: number; completionTokens?: number }> {
+    const prompt = this.promptsService.getTranslationPrompt(text, targetLanguage, sourceLanguage);
 
     try {
       const response = await this.axiosClient.post(
@@ -140,19 +93,18 @@ Translated text:`;
         },
       );
 
-      const translatedText =
-        response.data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+      const translatedText = response.data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
 
       if (!translatedText) {
         throw new Error('No translation generated');
       }
 
+      const usage = response.data.usageMetadata;
+      const promptTokens = usage?.promptTokenCount;
+      const completionTokens = usage?.candidatesTokenCount;
       const detectedLanguage = sourceLanguage || 'auto-detected';
 
-      return {
-        translatedText,
-        detectedLanguage,
-      };
+      return { translatedText, detectedLanguage, promptTokens, completionTokens };
     } catch (error) {
       console.error('Gemini translation error:', error);
       throw new Error('Failed to translate article');
@@ -162,11 +114,13 @@ Translated text:`;
   async analyzeArticle(
     title: string,
     content: string,
-    task: 'review' | 'bugs' | 'optimize' | 'explain' = 'review',
+    task: AnalysisTask = 'review',
   ): Promise<{
     analysis: string;
     suggestions: string[];
     severity: 'info' | 'warning' | 'error';
+    promptTokens?: number;
+    completionTokens?: number;
   }> {
     if (content.length < 200) {
       return {
@@ -179,24 +133,7 @@ Translated text:`;
       };
     }
 
-    const taskInstructions = {
-      review: 'Review quality and completeness',
-      bugs: 'Find technical errors',
-      optimize: 'Suggest SEO and readability improvements',
-      explain: 'Assess clarity for beginners',
-    };
-
-    const prompt = `Task: ${taskInstructions[task]}
-
-Title: ${title}
-Content: ${content}
-
-Return ONLY valid JSON in this exact format:
-{
-  "analysis": "your analysis here (one sentence, max 100 chars)",
-  "suggestions": ["suggestion 1", "suggestion 2"],
-  "severity": "info"
-}`;
+    const prompt = this.promptsService.getAnalysisPrompt(title, content, task);
 
     try {
       const response = await this.axiosClient.post(
@@ -216,27 +153,22 @@ Return ONLY valid JSON in this exact format:
         },
       );
 
-      let text =
-        response.data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+      let text = response.data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
 
       text = text.replace(/```json\n?/g, '').replace(/```\n?/g, '');
 
       const result = JSON.parse(text);
 
+      const usage = response.data.usageMetadata;
+      const promptTokens = usage?.promptTokenCount;
+      const completionTokens = usage?.candidatesTokenCount;
+
       return {
-        analysis:
-          result.analysis?.substring(0, 150) ||
-          `Analysis of "${title}" completed.`,
-        suggestions: result.suggestions?.slice(0, 2) || [
-          'Add more examples',
-          'Improve structure',
-        ],
-        severity:
-          result.severity === 'warning'
-            ? 'warning'
-            : result.severity === 'error'
-              ? 'error'
-              : 'info',
+        analysis: result.analysis?.substring(0, 150) || `Analysis of "${title}" completed.`,
+        suggestions: result.suggestions?.slice(0, 2) || ['Add more examples', 'Improve structure'],
+        severity: result.severity === 'warning' ? 'warning' : result.severity === 'error' ? 'error' : 'info',
+        promptTokens,
+        completionTokens,
       };
     } catch (error) {
       console.error('Parse error:', error);
@@ -248,6 +180,49 @@ Return ONLY valid JSON in this exact format:
         ],
         severity: 'warning',
       };
+    }
+  }
+
+  async generateFreeText(
+    prompt: string,
+    style: GenerationStyle = 'balanced',
+  ): Promise<{ text: string; promptTokens?: number; completionTokens?: number }> {
+    const fullPrompt = this.promptsService.getGenerationPrompt(prompt, style);
+    const config = this.promptsService.getGenerationConfig(style);
+
+    try {
+      const response = await this.axiosClient.post(
+        `/models/${this.model}:generateContent`,
+        {
+          contents: [{ parts: [{ text: fullPrompt }] }],
+          generationConfig: {
+            temperature: config.temperature,
+            maxOutputTokens: 500,
+            topP: 0.95,
+          },
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'x-goog-api-key': this.apiKey,
+          },
+        },
+      );
+
+      const text = response.data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+
+      if (!text) {
+        throw new Error('No response generated');
+      }
+
+      const usage = response.data.usageMetadata;
+      const promptTokens = usage?.promptTokenCount;
+      const completionTokens = usage?.candidatesTokenCount;
+
+      return { text, promptTokens, completionTokens };
+    } catch (error) {
+      console.error('Gemini generation error:', error);
+      throw new Error('Failed to generate response');
     }
   }
 }

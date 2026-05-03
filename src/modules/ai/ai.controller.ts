@@ -7,6 +7,7 @@ import {
   HttpCode,
   HttpStatus,
   UseGuards,
+  Get,
 } from '@nestjs/common';
 import { AiService } from './ai.service';
 import {
@@ -23,6 +24,7 @@ import {
   AnalyzeArticleResponse,
 } from './dto/analyze-article.dto';
 import { ThrottlerGuard } from '@nestjs/throttler';
+import { GenerateRequest, GenerateResponse } from './dto/generate.dto';
 
 @Controller('ai')
 @UseGuards(ThrottlerGuard)
@@ -57,5 +59,19 @@ export class AiController {
     @Body() request: AnalyzeArticleRequest,
   ): Promise<AnalyzeArticleResponse> {
     return this.aiService.analyzeArticle(articleId, request);
+  }
+
+  @Public()
+  @Get('stats')
+  @HttpCode(HttpStatus.OK)
+  async getStats() {
+    return this.aiService.getTrackingStats();
+  }
+
+  @Public()
+  @Post('generate')
+  @HttpCode(HttpStatus.OK)
+  async generate(@Body() request: GenerateRequest): Promise<GenerateResponse> {
+    return this.aiService.generateText(request);
   }
 }

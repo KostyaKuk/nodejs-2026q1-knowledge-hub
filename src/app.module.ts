@@ -9,6 +9,8 @@ import { CommetsModule } from './modules/comments/comments.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { AiModule } from './modules/ai/ai.module';
+import { CacheModule } from '@nestjs/cache-manager';
+import { AI_CONFIG } from './modules/ai/constants/ai-config.constants';
 
 @Module({
   imports: [
@@ -21,10 +23,15 @@ import { AiModule } from './modules/ai/ai.module';
     AiModule,
     ThrottlerModule.forRoot([
       {
-        ttl: 60,
-        limit: parseInt(process.env.AI_RATE_LIMIT_RPM || '20'),
+        name: 'ai',
+        ttl: AI_CONFIG.rateLimitTtl,
+        limit: AI_CONFIG.rateLimitLimit,
       },
     ]),
+    CacheModule.register({
+      ttl: AI_CONFIG.cacheTtlMs,
+      isGlobal: true,
+    }),
   ],
   controllers: [AppController],
   providers: [AppService],
