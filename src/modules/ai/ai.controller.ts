@@ -26,6 +26,7 @@ import {
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { GenerateRequest, GenerateResponse } from './dto/generate.dto';
 import { ReindexRequest, ReindexResponse } from './dto/reindex.dto';
+import { RagSearchRequest, RagSearchResponse } from './dto/rag-search.dto';
 
 @Controller('ai')
 @UseGuards(ThrottlerGuard)
@@ -81,5 +82,12 @@ export class AiController {
   @HttpCode(HttpStatus.OK)
   async reindex(@Body() request: ReindexRequest): Promise<ReindexResponse> {
     return this.aiService.reindexArticles(request);
+  }
+
+  @Public()
+  @Post('rag/search')
+  @HttpCode(HttpStatus.OK)
+  async search(@Body() request: RagSearchRequest): Promise<RagSearchResponse> {
+    return this.aiService.searchArticles(request);
   }
 }

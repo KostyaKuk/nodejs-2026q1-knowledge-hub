@@ -21,6 +21,7 @@ import { GenerateRequest, GenerateResponse } from './dto/generate.dto';
 import { QdrantService } from './qdrant.service';
 import { EmbeddingService } from './embedding.service';
 import { ReindexRequest, ReindexResponse } from './dto/reindex.dto';
+import { RagSearchRequest, RagSearchResponse } from './dto/rag-search.dto';
 
 @Injectable()
 export class AiService {
@@ -32,6 +33,34 @@ export class AiService {
     private embeddingService: EmbeddingService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
+
+  async searchArticles(request: RagSearchRequest): Promise<RagSearchResponse> {
+    const embedding = await this.embeddingService.generateEmbedding(
+      request.query,
+    );
+    console.log(`✅ Embedding generated, length: ${embedding.length}`);
+
+    const filters = {
+      articleStatus: request.articleStatus,
+      categoryId: request.categoryId,
+      tags: request.tags,
+    };
+
+    const results = await this.qdrantService.searchWithFilters(
+      embedding,
+      request.limit || 5,
+      filters,
+    );
+
+    return {
+      results: results.map((r) => ({
+        articleId: r.payload.articleId,
+        articleTitle: r.payload.title,
+        chunk: r.payload.content,
+        similarity: r.score,
+      })),
+    };
+  }
 
   async reindexArticles(request: ReindexRequest): Promise<ReindexResponse> {
     const { onlyPublished = true, articleIds } = request;
