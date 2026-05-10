@@ -27,6 +27,7 @@ import { ThrottlerGuard } from '@nestjs/throttler';
 import { GenerateRequest, GenerateResponse } from './dto/generate.dto';
 import { ReindexRequest, ReindexResponse } from './dto/reindex.dto';
 import { RagSearchRequest, RagSearchResponse } from './dto/rag-search.dto';
+import { RagChatRequest, RagChatResponse } from './dto/rag-chat.dto';
 
 @Controller('ai')
 @UseGuards(ThrottlerGuard)
@@ -89,5 +90,12 @@ export class AiController {
   @HttpCode(HttpStatus.OK)
   async search(@Body() request: RagSearchRequest): Promise<RagSearchResponse> {
     return this.aiService.searchArticles(request);
+  }
+
+  @Public()
+  @Post('rag/chat')
+  @HttpCode(HttpStatus.OK)
+  async chat(@Body() request: RagChatRequest): Promise<RagChatResponse> {
+    return this.aiService.chat(request);
   }
 }

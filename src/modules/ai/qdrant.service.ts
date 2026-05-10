@@ -107,12 +107,19 @@ export class QdrantService implements OnModuleInit {
     const filter =
       filterConditions.length > 0 ? { must: filterConditions } : undefined;
 
+    console.log('🔍 Final filter:', JSON.stringify(filter, null, 2));
+
     const result = await this.client.search(this.collectionName, {
       vector,
       limit,
       with_payload: true,
       filter,
     });
+
+    console.log('🔍 Search results count:', result.length);
+    if (result.length > 0) {
+      console.log('🔍 First result similarity:', result[0].score);
+    }
 
     return result;
   }

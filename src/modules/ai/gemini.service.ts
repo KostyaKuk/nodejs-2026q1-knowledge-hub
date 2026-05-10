@@ -266,4 +266,56 @@ export class GeminiService {
       throw new Error('Failed to generate response');
     }
   }
+
+  async generateRagAnswer(
+    question: string,
+    context: Array<{ title: string; content: string }>,
+  ): Promise<string> {
+    const contextText = context
+      .map((c, i) => `[${i + 1}] Title: ${c.title}\nContent: ${c.content}\n`)
+      .join('\n');
+
+    const prompt = `You are a helpful assistant for a Knowledge Hub platform. Answer the user's question based ONLY on the provided context articles.
+
+CONTEXT ARTICLES:
+${contextText}
+
+USER QUESTION: ${question}
+
+INSTRUCTIONS:
+- Answer based ONLY on the context above
+- If the answer cannot be found in the context, say "I cannot find relevant information in the knowledge base"
+- Be concise and helpful
+- Do not make up information
+- Cite sources by mentioning the article titles
+
+ANSWER:`;
+
+    const response = await this.axiosClient.post(
+      `/models/${this.model}:generateContent`,
+      {
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature: 0.3,
+          maxOutputTokens: 1000,
+          topP: 0.95,
+        },
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': this.apiKey,
+        },
+      },
+    );
+
+    const answer =
+      response.data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+
+    if (!answer) {
+      throw new Error('No answer generated');
+    }
+
+    return answer;
+  }
 }

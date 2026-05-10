@@ -22,6 +22,8 @@ import { QdrantService } from './qdrant.service';
 import { EmbeddingService } from './embedding.service';
 import { ReindexRequest, ReindexResponse } from './dto/reindex.dto';
 import { RagSearchRequest, RagSearchResponse } from './dto/rag-search.dto';
+import { RagChatRequest, RagChatResponse } from './dto/rag-chat.dto';
+import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class AiService {
@@ -33,6 +35,50 @@ export class AiService {
     private embeddingService: EmbeddingService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
+
+  async chat(request: RagChatRequest): Promise<RagChatResponse> {
+    const conversationId = request.conversationId || uuidv4();
+
+    const embedding = await this.embeddingService.generateEmbedding(
+      request.question,
+    );
+
+    const searchResults = await this.qdrantService.searchWithFilters(
+      embedding,
+      5,
+      { articleStatus: 'PUBLISHED' },
+    );
+
+    if (searchResults.length === 0) {
+      return {
+        answer: 'I cannot find relevant information in the knowledge base.',
+        sources: [],
+        conversationId,
+      };
+    }
+
+    const context = searchResults.map((r) => ({
+      title: r.payload.title,
+      content: r.payload.content,
+    }));
+
+    const answer = await this.geminiService.generateRagAnswer(
+      request.question,
+      context,
+    );
+
+    const sources = searchResults.map((r) => ({
+      articleId: r.payload.articleId,
+      articleTitle: r.payload.title,
+      relevantChunk: r.payload.content,
+    }));
+
+    return {
+      answer,
+      sources,
+      conversationId,
+    };
+  }
 
   async searchArticles(request: RagSearchRequest): Promise<RagSearchResponse> {
     const embedding = await this.embeddingService.generateEmbedding(

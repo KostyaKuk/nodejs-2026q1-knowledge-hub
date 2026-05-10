@@ -38,6 +38,7 @@ export class RagSearchRequest {
 }
 
 export class RagSearchResponse {
+  answer?: string;
   results: Array<{
     articleId: string;
     articleTitle: string;
