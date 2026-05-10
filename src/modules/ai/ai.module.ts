@@ -7,11 +7,19 @@ import { HttpModule } from '@nestjs/axios';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { AiTrackingService } from './ai-tracking.service';
 import { PromptsModule } from './prompts/prompts.module';
+import { QdrantService } from './qdrant.service';
+import { EmbeddingService } from './embedding.service';
 
 @Module({
   imports: [ArticleModule, HttpModule, ThrottlerModule, PromptsModule],
   controllers: [AiController],
-  providers: [AiService, GeminiService, AiTrackingService],
-  exports: [AiTrackingService],
+  providers: [
+    AiService,
+    GeminiService,
+    AiTrackingService,
+    QdrantService,
+    EmbeddingService,
+  ],
+  exports: [AiTrackingService, QdrantService],
 })
 export class AiModule {}

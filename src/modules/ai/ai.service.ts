@@ -18,6 +18,9 @@ import { Cache } from 'cache-manager';
 import { AI_CONFIG } from './constants/ai-config.constants';
 import { AiTrackingService } from './ai-tracking.service';
 import { GenerateRequest, GenerateResponse } from './dto/generate.dto';
+import { QdrantService } from './qdrant.service';
+import { EmbeddingService } from './embedding.service';
+import { ReindexRequest, ReindexResponse } from './dto/reindex.dto';
 
 @Injectable()
 export class AiService {
@@ -25,8 +28,67 @@ export class AiService {
     private articleService: ArticleService,
     private geminiService: GeminiService,
     private trackingService: AiTrackingService,
+    private qdrantService: QdrantService,
+    private embeddingService: EmbeddingService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
+
+  async reindexArticles(request: ReindexRequest): Promise<ReindexResponse> {
+    const { onlyPublished = true, articleIds } = request;
+
+    let articles = await this.articleService.findAll({});
+
+    if (onlyPublished) {
+      articles = articles.filter((a) => a.status === 'PUBLISHED');
+    }
+
+    if (articleIds?.length) {
+      articles = articles.filter((a) => articleIds.includes(a.id));
+    }
+
+    if (articles.length === 0) {
+      return {
+        indexedArticles: 0,
+        indexedChunks: 0,
+        vectorCollection:
+          process.env.QDRANT_COLLECTION || 'knowledge_hub_articles',
+      };
+    }
+
+    let indexedArticles = 0;
+    let indexedChunks = 0;
+
+    for (const article of articles) {
+      try {
+        const text = `${article.title}\n\n${article.content}`;
+
+        const embedding = await this.embeddingService.generateEmbedding(text);
+
+        await this.qdrantService.upsertPoint(article.id, embedding, {
+          articleId: article.id,
+          title: article.title,
+          content: article.content.substring(0, 1000),
+          status: article.status,
+          createdAt: article.createdAt,
+        });
+
+        indexedArticles++;
+        indexedChunks++;
+        console.log(`✅ Indexed: ${article.title}`);
+      } catch (error) {
+        console.error(`❌ Failed to index article ${article.id}:`, error);
+      }
+    }
+
+    console.log(`🎉 Reindex completed. Indexed ${indexedArticles} articles.`);
+
+    return {
+      indexedArticles,
+      indexedChunks,
+      vectorCollection:
+        process.env.QDRANT_COLLECTION || 'knowledge_hub_articles',
+    };
+  }
 
   private generateCacheKey(
     articleId: string,
@@ -153,7 +215,7 @@ export class AiService {
   }
 
   async generateText(request: GenerateRequest): Promise<GenerateResponse> {
-  const { text } = await this.geminiService.generateFreeText(request.prompt);
-  return { response: text };
-}
+    const { text } = await this.geminiService.generateFreeText(request.prompt);
+    return { response: text };
+  }
 }
