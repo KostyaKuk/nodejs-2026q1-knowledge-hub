@@ -42,7 +42,11 @@ export class QdrantService implements OnModuleInit {
     }
   }
 
-  async upsertPoint(id: string, vector: number[], payload: any): Promise<void> {
+  async upsertPoint(
+    id: string | number,
+    vector: number[],
+    payload: any,
+  ): Promise<void> {
     await this.client.upsert(this.collectionName, {
       points: [{ id, vector, payload }],
     });
@@ -122,5 +126,25 @@ export class QdrantService implements OnModuleInit {
     }
 
     return result;
+  }
+
+  async deletePointsByArticleId(articleId: string): Promise<boolean> {
+    try {
+      const result = await this.client.delete(this.collectionName, {
+        filter: {
+          must: [
+            {
+              key: 'articleId',
+              match: { value: articleId },
+            },
+          ],
+        },
+      });
+
+      return result.status === 'acknowledged';
+    } catch (error) {
+      console.error('Failed to delete points by articleId:', error);
+      return false;
+    }
   }
 }

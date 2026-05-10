@@ -9,6 +9,7 @@ import { AiTrackingService } from './ai-tracking.service';
 import { PromptsModule } from './prompts/prompts.module';
 import { QdrantService } from './qdrant.service';
 import { EmbeddingService } from './embedding.service';
+import { ChunkingService } from './chunking.service';
 
 @Module({
   imports: [ArticleModule, HttpModule, ThrottlerModule, PromptsModule],
@@ -19,6 +20,7 @@ import { EmbeddingService } from './embedding.service';
     AiTrackingService,
     QdrantService,
     EmbeddingService,
+    ChunkingService,
   ],
   exports: [AiTrackingService, QdrantService],
 })

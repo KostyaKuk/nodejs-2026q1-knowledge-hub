@@ -24,6 +24,7 @@ import { ReindexRequest, ReindexResponse } from './dto/reindex.dto';
 import { RagSearchRequest, RagSearchResponse } from './dto/rag-search.dto';
 import { RagChatRequest, RagChatResponse } from './dto/rag-chat.dto';
 import { v4 as uuidv4 } from 'uuid';
+import { ChunkingService } from './chunking.service';
 
 @Injectable()
 export class AiService {
@@ -33,8 +34,24 @@ export class AiService {
     private trackingService: AiTrackingService,
     private qdrantService: QdrantService,
     private embeddingService: EmbeddingService,
+    private chunkingService: ChunkingService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
+
+  async deleteArticleFromIndex(articleId: string): Promise<void> {
+    const article = await this.articleService.findById(articleId);
+    if (!article) {
+      throw new NotFoundException(`Article with ID "${articleId}" not found`);
+    }
+
+    const deleted = await this.qdrantService.deletePointsByArticleId(articleId);
+
+    if (!deleted) {
+      throw new NotFoundException(
+        `No vector records found for article ID "${articleId}"`,
+      );
+    }
+  }
 
   async chat(request: RagChatRequest): Promise<RagChatResponse> {
     const conversationId = request.conversationId || uuidv4();
@@ -117,7 +134,7 @@ export class AiService {
       articles = articles.filter((a) => a.status === 'PUBLISHED');
     }
 
-    if (articleIds?.length) {
+    if (articleIds && articleIds.length > 0) {
       articles = articles.filter((a) => articleIds.includes(a.id));
     }
 
@@ -134,28 +151,36 @@ export class AiService {
     let indexedChunks = 0;
 
     for (const article of articles) {
-      try {
-        const text = `${article.title}\n\n${article.content}`;
+      const fullText = `${article.title}\n\n${article.content}`;
 
-        const embedding = await this.embeddingService.generateEmbedding(text);
+      const chunks = this.chunkingService.chunkText(fullText, article.id);
+      console.log(
+        `📝 Article "${article.title}" split into ${chunks.length} chunks`,
+      );
 
-        await this.qdrantService.upsertPoint(article.id, embedding, {
-          articleId: article.id,
-          title: article.title,
-          content: article.content.substring(0, 1000),
-          status: article.status,
-          createdAt: article.createdAt,
-        });
+      for (const chunk of chunks) {
+        try {
+          const embedding = await this.embeddingService.generateEmbedding(
+            chunk.text,
+          );
 
-        indexedArticles++;
-        indexedChunks++;
-        console.log(`✅ Indexed: ${article.title}`);
-      } catch (error) {
-        console.error(`❌ Failed to index article ${article.id}:`, error);
+          await this.qdrantService.upsertPoint(chunk.id, embedding, {
+            articleId: article.id,
+            title: article.title,
+            content: chunk.text,
+            chunkIndex: chunk.index,
+            status: article.status,
+            createdAt: article.createdAt,
+          });
+
+          indexedChunks++;
+        } catch (error) {
+          console.error(`❌ Failed to index chunk ${chunk.id}:`, error);
+        }
       }
-    }
 
-    console.log(`🎉 Reindex completed. Indexed ${indexedArticles} articles.`);
+      indexedArticles++;
+    }
 
     return {
       indexedArticles,

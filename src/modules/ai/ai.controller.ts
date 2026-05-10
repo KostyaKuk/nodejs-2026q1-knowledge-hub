@@ -8,6 +8,7 @@ import {
   HttpStatus,
   UseGuards,
   Get,
+  Delete,
 } from '@nestjs/common';
 import { AiService } from './ai.service';
 import {
@@ -97,5 +98,14 @@ export class AiController {
   @HttpCode(HttpStatus.OK)
   async chat(@Body() request: RagChatRequest): Promise<RagChatResponse> {
     return this.aiService.chat(request);
+  }
+
+  @Public()
+  @Delete('rag/index/articles/:articleId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteArticleFromIndex(
+    @Param('articleId', ParseUUIDPipe) articleId: string,
+  ): Promise<void> {
+    return this.aiService.deleteArticleFromIndex(articleId);
   }
 }
