@@ -8,5 +8,6 @@ import { PrismaArticleRepository } from './repositories/prisma-article.repositor
   imports: [PrismaModule, ArticleModule],
   controllers: [ArticleController],
   providers: [ArticleService, PrismaArticleRepository],
+  exports: [ArticleService, PrismaArticleRepository],
 })
 export class ArticleModule {}

@@ -9,6 +9,10 @@
 - Git - [Download & Install Git](https://git-scm.com/downloads).
 - Node.js - [Download & Install Node.js](https://nodejs.org/en/download/) and the npm package manager.
 
+## You should use a proxy server as proxyman in port 8888 and vpn
+ 
+ GET /ai/stats return stats of tokens every endpoints as summarize,translate,analyze,generate
+
 ## Downloading
 
 ```
