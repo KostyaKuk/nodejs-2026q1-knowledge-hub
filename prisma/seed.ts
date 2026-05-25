@@ -73,7 +73,8 @@ async function main() {
   const article1 = await prisma.article.create({
     data: {
       title: 'Getting Started with NestJS',
-      content: 'NestJS is a progressive Node.js framework for building efficient and scalable server-side applications.',
+      content:
+        'NestJS is a progressive Node.js framework for building efficient and scalable server-side applications.',
       status: 'PUBLISHED',
       authorId: editor.id,
       categoryId: technology.id,

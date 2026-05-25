@@ -1,12 +1,13 @@
 FROM node:24-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci
+RUN npm install
 COPY prisma ./prisma/
 RUN npx prisma generate
 COPY . .
+RUN ls -la 
 RUN npm run build
-RUN npm ci --omit=dev && npm cache clean --force
+RUN ls -la dist/ 
 
 FROM node:24-alpine AS production
 
@@ -26,4 +27,4 @@ USER nodejs
 
 EXPOSE 4000
 
-CMD ["node", "dist/main"]
+CMD ["node", "dist/src/main"]

@@ -9,6 +9,10 @@
 - Git - [Download & Install Git](https://git-scm.com/downloads).
 - Node.js - [Download & Install Node.js](https://nodejs.org/en/download/) and the npm package manager.
 
+## You should use a proxy server as proxyman in port 8888 and vpn
+ 
+ GET /ai/stats return stats of tokens every endpoints as summarize,translate,analyze,generate
+
 ## Downloading
 
 ```
@@ -23,13 +27,17 @@ npm install
 
 ## Running application
 
+```
 docker-compose up -d 
+```
 
 ```
 npx prisma migrate deploy
+```
 
 ```
 npx prisma db seed
+```
 
 ```
 npm start
@@ -40,6 +48,16 @@ in your browser OpenAPI documentation by typing http://localhost:4000/doc/.
 For more information about OpenAPI/Swagger please visit https://swagger.io/.
 
 ## Testing
+
+### Unit tests for checking part 4 !
+
+```
+npm run test:unit
+```
+
+```
+npm run test:coverage
+```
 
 After application running open new terminal and enter:
 
