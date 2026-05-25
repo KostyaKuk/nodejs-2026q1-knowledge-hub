@@ -1,7 +1,7 @@
 FROM node:24-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci
+RUN npm install
 COPY prisma ./prisma/
 RUN npx prisma generate
 COPY . .
@@ -27,4 +27,4 @@ USER nodejs
 
 EXPOSE 4000
 
-CMD ["node", "dist/main"]
+CMD ["node", "dist/src/main"]

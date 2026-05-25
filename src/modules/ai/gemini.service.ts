@@ -1,6 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import axios, { AxiosInstance } from 'axios';
-import { PromptsService, SummaryLength, AnalysisTask, GenerationStyle } from './prompts/prompts.service';
+import {
+  PromptsService,
+  SummaryLength,
+  AnalysisTask,
+  GenerationStyle,
+} from './prompts/prompts.service';
 
 @Injectable()
 export class GeminiService {
@@ -27,7 +32,11 @@ export class GeminiService {
     title: string,
     content: string,
     length: SummaryLength = 'medium',
-  ): Promise<{ summary: string; promptTokens?: number; completionTokens?: number }> {
+  ): Promise<{
+    summary: string;
+    promptTokens?: number;
+    completionTokens?: number;
+  }> {
     const prompt = this.promptsService.getSummaryPrompt(title, content, length);
     const config = this.promptsService.getSummaryConfig(length);
 
@@ -50,7 +59,8 @@ export class GeminiService {
         },
       );
 
-      const summary = response.data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+      const summary =
+        response.data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
 
       if (!summary) {
         throw new Error('No summary generated');
@@ -71,8 +81,17 @@ export class GeminiService {
     text: string,
     targetLanguage: string,
     sourceLanguage?: string,
-  ): Promise<{ translatedText: string; detectedLanguage: string; promptTokens?: number; completionTokens?: number }> {
-    const prompt = this.promptsService.getTranslationPrompt(text, targetLanguage, sourceLanguage);
+  ): Promise<{
+    translatedText: string;
+    detectedLanguage: string;
+    promptTokens?: number;
+    completionTokens?: number;
+  }> {
+    const prompt = this.promptsService.getTranslationPrompt(
+      text,
+      targetLanguage,
+      sourceLanguage,
+    );
 
     try {
       const response = await this.axiosClient.post(
@@ -93,7 +112,8 @@ export class GeminiService {
         },
       );
 
-      const translatedText = response.data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+      const translatedText =
+        response.data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
 
       if (!translatedText) {
         throw new Error('No translation generated');
@@ -104,7 +124,12 @@ export class GeminiService {
       const completionTokens = usage?.candidatesTokenCount;
       const detectedLanguage = sourceLanguage || 'auto-detected';
 
-      return { translatedText, detectedLanguage, promptTokens, completionTokens };
+      return {
+        translatedText,
+        detectedLanguage,
+        promptTokens,
+        completionTokens,
+      };
     } catch (error) {
       console.error('Gemini translation error:', error);
       throw new Error('Failed to translate article');
@@ -153,7 +178,8 @@ export class GeminiService {
         },
       );
 
-      let text = response.data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+      let text =
+        response.data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
 
       text = text.replace(/```json\n?/g, '').replace(/```\n?/g, '');
 
@@ -164,9 +190,19 @@ export class GeminiService {
       const completionTokens = usage?.candidatesTokenCount;
 
       return {
-        analysis: result.analysis?.substring(0, 150) || `Analysis of "${title}" completed.`,
-        suggestions: result.suggestions?.slice(0, 2) || ['Add more examples', 'Improve structure'],
-        severity: result.severity === 'warning' ? 'warning' : result.severity === 'error' ? 'error' : 'info',
+        analysis:
+          result.analysis?.substring(0, 150) ||
+          `Analysis of "${title}" completed.`,
+        suggestions: result.suggestions?.slice(0, 2) || [
+          'Add more examples',
+          'Improve structure',
+        ],
+        severity:
+          result.severity === 'warning'
+            ? 'warning'
+            : result.severity === 'error'
+              ? 'error'
+              : 'info',
         promptTokens,
         completionTokens,
       };
@@ -186,7 +222,11 @@ export class GeminiService {
   async generateFreeText(
     prompt: string,
     style: GenerationStyle = 'balanced',
-  ): Promise<{ text: string; promptTokens?: number; completionTokens?: number }> {
+  ): Promise<{
+    text: string;
+    promptTokens?: number;
+    completionTokens?: number;
+  }> {
     const fullPrompt = this.promptsService.getGenerationPrompt(prompt, style);
     const config = this.promptsService.getGenerationConfig(style);
 
@@ -209,7 +249,8 @@ export class GeminiService {
         },
       );
 
-      const text = response.data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+      const text =
+        response.data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
 
       if (!text) {
         throw new Error('No response generated');
@@ -224,5 +265,57 @@ export class GeminiService {
       console.error('Gemini generation error:', error);
       throw new Error('Failed to generate response');
     }
+  }
+
+  async generateRagAnswer(
+    question: string,
+    context: Array<{ title: string; content: string }>,
+  ): Promise<string> {
+    const contextText = context
+      .map((c, i) => `[${i + 1}] Title: ${c.title}\nContent: ${c.content}\n`)
+      .join('\n');
+
+    const prompt = `You are a helpful assistant for a Knowledge Hub platform. Answer the user's question based ONLY on the provided context articles.
+
+CONTEXT ARTICLES:
+${contextText}
+
+USER QUESTION: ${question}
+
+INSTRUCTIONS:
+- Answer based ONLY on the context above
+- If the answer cannot be found in the context, say "I cannot find relevant information in the knowledge base"
+- Be concise and helpful
+- Do not make up information
+- Cite sources by mentioning the article titles
+
+ANSWER:`;
+
+    const response = await this.axiosClient.post(
+      `/models/${this.model}:generateContent`,
+      {
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature: 0.3,
+          maxOutputTokens: 1000,
+          topP: 0.95,
+        },
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': this.apiKey,
+        },
+      },
+    );
+
+    const answer =
+      response.data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+
+    if (!answer) {
+      throw new Error('No answer generated');
+    }
+
+    return answer;
   }
 }
